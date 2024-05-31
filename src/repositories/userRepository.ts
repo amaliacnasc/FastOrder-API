@@ -1,40 +1,98 @@
 import { PrismaClient, Role } from "@prisma/client";
 
+import { createUserParams, updateUserParams } from "../types";
 // Classe que representa o repositório de usuários, responsável por interagir com o banco de dados
-export class UserRepository {
-    prisma = new PrismaClient() // Instância do Prisma Client para interagir com o banco de dados
 
-    // Método para buscar um usuário por ID
-    // Parâmetro: idUser - o ID do usuário a ser buscado
-    // Retorna: o usuário encontrado ou null se não encontrado
+export class UserRepository {
+    prisma = new PrismaClient()
+
     public async getById(idUser: string) {
         const user = await this.prisma.user.findUnique({
             where: {
                 id: idUser // Condição de busca pelo ID do usuário
+            },
+            include: {
+                _count: true,
+               orders: {
+                include: {
+                    _count: true,
+                }
+               },
+               Works: {
+                include: {
+                    Unit: true
+                }
+               } 
             }
         });
         return user; // Retorna o usuário encontrado ou null
     }
 
-    // Método para criar um novo usuário
-    // Parâmetro: createUserParams - objeto contendo os dados do novo usuário (name, cpf, email, password, phone, role)
-    // Retorna: o usuário criado
-    public async create(createUserParams: {name: string, cpf: string, email: string, password: string, phone: string, role: Role}) {
+    public async getByEmail(emailUser: string) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                email: emailUser // Condição de busca pelo email do usuário
+            }
+        });
+        return user; // Retorna o usuário encontrado ou null
+    }
+
+    public async getByCpf(cpfUser: string) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                cpf: cpfUser // Condição de busca pelo cpf do usuário
+            }
+        });
+        return user; // Retorna o usuário encontrado ou null
+    }
+
+    public async getByPhone(phoneUser: string) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                phone: phoneUser // Condição de busca pelo phone do usuário
+            }
+        });
+        return user; // Retorna o usuário encontrado ou null
+    }
+
+    public async create(createUserParams: createUserParams) {
         const user = await this.prisma.user.create({
             data: createUserParams // Dados do usuário a ser criado
         });
         return user; // Retorna o usuário criado
     }
 
-    // TODO: Método para buscar todos os usuários
-    // Este método deve retornar uma lista de todos os usuários no banco de dados
+    public async getAll(){
+        const users = await this.prisma.user.findMany({
+            include: {
+                Works: {
+                    include: {
+                        Unit: true
+                    }
+                }
+            }
+        })
 
-    // TODO: Método para atualizar um usuário por ID
-    // Este método deve atualizar os dados de um usuário específico baseado no seu ID
+        return users
+    }
 
-    // TODO: Método para deletar um usuário por ID
-    // Este método deve deletar um usuário específico do banco de dados baseado no seu ID
+    public async update(idUser:string, updateUserParams: updateUserParams){
+        const userUpdated = await this.prisma.user.update({
+            where:{
+                id:idUser
+            },
+            data:updateUserParams
+        })
 
-    // TODO: Adicionar métodos auxiliares se necessário
-    // Por exemplo, métodos para buscar usuários por outros critérios como email ou CPF
+        return userUpdated
+    }
+    
+    public async delete(userId:string){
+        const userDeleted = await this.prisma.user.delete({
+            where:{
+                id: userId
+            }
+        })
+        return userDeleted
+    }
 }

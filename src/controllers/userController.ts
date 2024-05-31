@@ -1,77 +1,225 @@
 import { Request, Response } from 'express';
 import { UserUseCase } from '../useCases/userUseCase';
-import { IsEmail, IsNotEmpty, IsString, validate } from 'class-validator';
-import { plainToClass } from 'class-transformer';
+import validator from 'validator';
+
+import { RequestHttpResponse } from '../types';
+import {z} from "zod"
+import { createUserSchema, updateUserSchema } from '../schemas/userSchemas';
+
 
 // Controlador que lida com as requisições HTTP relacionadas a usuários
 export class UserController {
   userUseCase = new UserUseCase(); // Instância da classe de casos de uso de usuários
 
-  // Método para buscar um usuário por ID
-  // Parâmetro: req - objeto de requisição do Express
-  // Parâmetro: res - objeto de resposta do Express
-  // Retorna: void (resposta HTTP enviada diretamente)
-  async getById(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = req.params.id; // Obtém o ID do usuário dos parâmetros da URL
-      const user = await this.userUseCase.getById(userId); // Busca o usuário pelo ID
-      if (user) {
-        res.status(200).json(user); // Retorna o usuário encontrado com status 200
-      } else {
-        res.status(404).json({ message: 'User not found' }); // Retorna erro 404 se o usuário não for encontrado
-      }
-    } catch (error) {
-      console.error('Error fetching user by ID:', error); // Log de erro no servidor
-      res.status(500).json({ message: 'Internal server error' }); // Retorna erro 500 em caso de falha interna
-    }
-  }
-
-  // Método para criar um novo usuário
-  // Parâmetro: req - objeto de requisição do Express
-  // Parâmetro: res - objeto de resposta do Express
-  // Retorna: void (resposta HTTP enviada diretamente)
-  async create(req: Request, res: Response): Promise<void> {
-    try {
-      const createUserDto = plainToClass(CreateUserDTO, req.body); // Converte o corpo da requisição para a classe DTO
-      const errors = await validate(createUserDto); // Valida os dados do DTO
-
-      if (errors.length > 0) {
-        res.status(400).json({ errors: errors.map(error => error.constraints) }); // Retorna erros de validação com status 400
-        return;
+    async getById(req: Request, res: Response) {
+        const {userId} = req.params; // Obtém o ID do usuário dos parâmetros da URL
+        
+        const httpResponse: RequestHttpResponse = {
+          status: 200,
+          success: true,
+          message: "User Details"
       }
 
-      const user = await this.userUseCase.create(createUserDto); // Cria o usuário usando a classe de casos de uso
-      res.status(201).json(user); // Retorna o usuário criado com status 201
-    } catch (error) {
-      console.error('Error creating user:', error); // Log de erro no servidor
-      res.status(500).json({ message: 'Internal server error' }); // Retorna erro 500 em caso de falha interna
+        const isUuid = validator.isUUID(userId)
+
+
+        if (!isUuid) {
+          httpResponse.status - 400
+          httpResponse.success = false
+          httpResponse.message = `The id ${userId} is not valid.`
+          
+          return res.status(httpResponse.status).json(httpResponse)
+
+        }
+        
+      try {
+        const user = await this.userUseCase.getById(userId); // Busca o usuário pelo ID
+
+        if(!user) {
+          httpResponse.status = 404
+          httpResponse.success = false
+          httpResponse.message =  'User Not Found'
+
+          return res.status(httpResponse.status).json(httpResponse)
+        }
+
+        httpResponse.data = user
+
+        return res.status(httpResponse.status).json(httpResponse)
+
+      } catch (error) {
+        console.error('Error fetching user by ID:', error); // Log de erro no servidor
+        
+        httpResponse.status = 500
+        httpResponse.success = false
+        httpResponse.message = 'Internal server error'
+        
+      return  res.status(httpResponse.status).json(httpResponse); 
+      }
+
     }
-  }
-}
 
-// Classe DTO para validação e transformação de dados de criação de usuário
-class CreateUserDTO {
-  @IsNotEmpty({ message: 'Name is required' })
-  @IsString({ message: 'Name must be a string' })
-  name!: string;
+    async getAll(res: Response) {
+      const httpResponse: RequestHttpResponse = {
+          status: 200,
+          success: true,
+          message: "Lista de Usuarios"
 
-  @IsNotEmpty({ message: 'Cpf is required' })
-  @IsString({ message: 'Cpf must be a string' })
-  cpf!: string;
+      }
 
-  @IsNotEmpty({ message: 'Password is required' })
-  @IsString({ message: 'Password must be a string' })
-  password!: string;
+      /* Adicionar FIltro, Ordenação e Paginação */
 
-  @IsNotEmpty({ message: 'Phone is required' })
-  @IsString({ message: 'Phone must be a string' })
-  phone!: string;
 
-  @IsNotEmpty({ message: 'Role is required' })
-  @IsString({ message: 'Role must be a string' })
-  role!: string;
+      try {
+          const users = await this.userUseCase.getAll()
 
-  @IsNotEmpty({ message: 'Email is required' })
-  @IsEmail({}, { message: 'Invalid email' })
-  email!: string;
+          httpResponse.data = users
+          
+          return res.status(httpResponse.status).json(httpResponse)
+
+
+      } catch (error) {
+          console.error('Error fetching all product by ID:', error);
+          
+          httpResponse.status = 500
+          httpResponse.success = false
+          httpResponse.message = 'Internal server error'
+          
+        return  res.status(httpResponse.status).json(httpResponse); 
+      }
+    }
+
+
+    async create(req: Request, res: Response) {
+        const request_body_validation = await createUserSchema.safeParseAsync(req.body)
+
+        const httpResponse: RequestHttpResponse = {
+            status: 200,
+            success: true,
+            message: "User Created Succefully"
+        }
+
+        if(!request_body_validation.success){
+            httpResponse.status = 400
+            httpResponse.success = false
+            httpResponse.message = "Unable to create user, please check the values"
+            httpResponse.errors = request_body_validation.error.formErrors.fieldErrors
+            
+            return res.status(httpResponse.status).json(httpResponse)
+        }
+
+        try {
+            await this.userUseCase.create(request_body_validation.data)
+
+            res.status(201).json(httpResponse)
+        } catch (error) {
+            console.error('Error creating a user:', error);
+            
+            httpResponse.status = 500
+            httpResponse.success = false
+            httpResponse.message = 'Internal server error'
+            
+            return  res.status(httpResponse.status).json(httpResponse); 
+        }
+    }
+
+    async update(req: Request, res: Response) {
+        const {userId} = req.params; // Obtém o ID do usuário dos parâmetros da URL
+          
+        const httpResponse: RequestHttpResponse = {
+            status: 200,
+            success: true,
+            message: "User Updated Succefully"
+        }
+
+          const isUuid = validator.isUUID(userId)
+
+          if (!isUuid) {
+            httpResponse.status - 400
+            httpResponse.success = false
+            httpResponse.message = `The id ${userId} is not valid.`
+            
+            return res.status(httpResponse.status).json(httpResponse)
+          }
+
+        const request_body_validation = await updateUserSchema.safeParseAsync(req.body)
+
+        if(!request_body_validation.success){
+            httpResponse.status = 400
+            httpResponse.success = false
+            httpResponse.message = "Unable to update user, check field values"
+            httpResponse.errors = request_body_validation.error.formErrors.fieldErrors
+            
+            return res.status(httpResponse.status).json(httpResponse)
+        }
+        try {
+            const userExist = await this.userUseCase.getById(userId)
+
+            if(!userExist) {
+                httpResponse.status = 404
+                httpResponse.success = false
+                httpResponse.message =  'User Not Found'
+
+                return res.status(httpResponse.status).json(httpResponse)
+            }    
+            
+            const product = await this.userUseCase.update(userId, request_body_validation.data)
+            
+            
+            return res.status(httpResponse.status).json(httpResponse)
+        } catch (error) {
+            console.error('Error updating a user:', error);
+            
+            httpResponse.status = 500
+            httpResponse.success = false
+            httpResponse.message = 'Internal server error'
+            
+           return  res.status(httpResponse.status).json(httpResponse); 
+        }
+    }
+
+    async delete(req: Request, res: Response) {
+      const {userId} = req.params
+          
+          const httpResponse: RequestHttpResponse = {
+              status: 200,
+              success: true,
+              message: 'User Deleted Succefully'
+          }
+
+          const isUuid = validator.isUUID(userId) 
+
+          if (!isUuid) {
+              httpResponse.status = 400
+              httpResponse.success = false
+              httpResponse.message = `The id ${userId} is not valid.`
+              
+              return res.status(httpResponse.status).json(httpResponse)
+          }
+
+          try {
+              const userExist = await this.userUseCase.getById(userId)
+
+              if(!userExist) { 
+                  httpResponse.status = 404
+                  httpResponse.success = false
+                  httpResponse.message =  'User Not Found'
+
+                  return res.status(httpResponse.status).json(httpResponse)
+              }    
+              
+              await this.userUseCase.delete(userId)
+
+
+              return res.status(httpResponse.status).json(httpResponse)
+          } catch (error) {
+              console.error('Error deleting a product:', error);
+              
+              httpResponse.status = 500
+              httpResponse.success = false
+              httpResponse.message = 'Internal server error'
+              
+            return  res.status(httpResponse.status).json(httpResponse); 
+          }
+    }
 }
