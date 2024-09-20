@@ -15,6 +15,7 @@ model User {
   password String  @db.Char(60)
   phone    String  @unique @db.VarChar(20)
   role     Role
+  image    String?
   orders   Order[]
   Works    Works[]
 }
@@ -37,6 +38,7 @@ model Product {
   name        String       @unique @db.VarChar(50)
   description String
   type        Type
+  image       String?
   OrderItems  OrderItems[]
   order       Order[]      @relation("OrderToProduct")
 }

@@ -1,14 +1,15 @@
 @BaseURL=http://localhost:3000/api
-@productId=fd824dac-b008-43ce-9ee2-e7424622dc1c
+@productId=04193b03-dca3-4ff0-b1d6-3ab2e6d63a8b
 
 ### Create a Product
 POST {{BaseURL}}/products
 Content-Type: application/json
 
 {
-    "name": "pamonha",
-    "description": "de milho",
-    "type": "SALTY"
+    "name": "Coxinha de frango",
+    "description": "salgado a base de frango e batata",
+    "type": "SALTY",
+    "image": "https://app.docemeu.com.br/wp-content/uploads/2022/11/coxinha-docemeu-lanchonete-campobelo-1.webp"
 }
  
 
@@ -20,14 +21,15 @@ GET {{BaseURL}}/products
 GET {{BaseURL}}/products/{{productId}}
 
 
-### Get a Products Details  
+### Update a Products Details  
 PUT {{BaseURL}}/products/{{productId}}
 Content-Type: application/json
 
 {
     "name": "paçoca",
-    "description": "ammendoim",
-    "type": "SALTY"
+    "description": "amendoim",
+    "type": "SALTY",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1bqdBjuY_83wdEzyFPCbrNkQnQBBMZHJSog&s"
 }
 
 ### Delete a Products  

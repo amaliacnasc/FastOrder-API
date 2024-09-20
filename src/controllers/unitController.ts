@@ -1,10 +1,9 @@
 
-import { UnitUseCase } from "../useCases/unitUseCase";
-import { createUnitParams } from "../types";
-import { Request, Response } from "express"
 import validator from "validator"
 import { RequestHttpResponse } from "../types"
-import { createUnitSchema, updateUnitSchema } from "../schemas/unitSchemas";
+import { UnitUseCase } from "../useCases/unitUseCase"
+import { Request, Response } from "express"
+import { createUnitSchema, updateUnitSchema } from "../schemas/unitSchemas"
 
 export class UnitController {
     unitUseCase = new UnitUseCase()
@@ -97,15 +96,18 @@ export class UnitController {
             httpResponse.message = "Unable to create unit, please check values"
             httpResponse.errors = request_body_validation.error.formErrors.fieldErrors
             
+            console.log(httpResponse);
             return res.status(httpResponse.status).json(httpResponse)
         }
+        
+        console.log(httpResponse);
 
         try {
             const unit = await this.unitUseCase.create(request_body_validation.data)
-
+            
             res.status(201).json(unit)
         } catch (error) {
-            console.error('Error creating a unit:', error);
+            console.log('Error creating a unit:', error);
             
             httpResponse.status = 500
             httpResponse.success = false

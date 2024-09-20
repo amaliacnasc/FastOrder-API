@@ -14,6 +14,7 @@ export type createUserParams = {
     email: string,
     password: string,
     phone: string,
+    image?: string,
     role: Role
 }
 
@@ -23,6 +24,7 @@ export type updateUserParams = {
     email?: string,
     password?: string,
     phone?: string,
+    image?: string,
     role?: Role 
 }
 
@@ -38,12 +40,14 @@ export type UserJWTPayload = {
 export type createProductParams = {
     name: string,
     description: string,
+    image?: string,
     type: Type,
 }
 
 export type updateProductParams = {
     name?: string,
     description?: string,
+    image?: string,
     type?: Type,
 }
 
@@ -79,7 +83,7 @@ export type updateWorksParams = {
 export type createOrderParams = {
     creationDate?: Date,
     receivedDate: Date,
-    status?: Status,
+    status: Status,
     deliveryEstimate: Date,
     userId: string
 }
